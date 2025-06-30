@@ -79,7 +79,6 @@ public class SimpleEntityData extends EntityData<Entity> {
 		addSimpleEntity("tipped arrow", TippedArrow.class);
 		addSimpleEntity("blaze", Blaze.class);
 		addSimpleEntity("mooshroom", MushroomCow.class);
-		addSimpleEntity("cow", Cow.class);
 		addSimpleEntity("cave spider", CaveSpider.class);
 		addSimpleEntity("dragon fireball", DragonFireball.class);
 		addSimpleEntity("egg", Egg.class);
