@@ -1,6 +1,5 @@
 package ch.njol.skript.lang.function;
 
-
 import ch.njol.skript.Skript;
 import ch.njol.skript.SkriptAPIException;
 import ch.njol.skript.classes.ClassInfo;
@@ -9,6 +8,8 @@ import ch.njol.skript.lang.Expression;
 import ch.njol.skript.lang.KeyProviderExpression;
 import ch.njol.skript.lang.KeyedValue;
 import ch.njol.skript.lang.SkriptParser;
+import ch.njol.skript.lang.function.FunctionRegistry.Retrieval;
+import ch.njol.skript.lang.function.FunctionRegistry.RetrievalResult;
 import ch.njol.skript.log.RetainingLogHandler;
 import ch.njol.skript.log.SkriptLogger;
 import ch.njol.skript.registrations.Classes;
@@ -16,16 +17,21 @@ import ch.njol.skript.util.Contract;
 import ch.njol.skript.util.LiteralUtils;
 import ch.njol.util.StringUtils;
 import org.bukkit.event.Event;
-import org.skriptlang.skript.util.Executable;
 import org.jetbrains.annotations.Nullable;
 import org.skriptlang.skript.lang.converter.Converters;
-
+import org.skriptlang.skript.util.Executable;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Reference to a {@link Function Skript function}.
  */
 public class FunctionReference<T> implements Contract, Executable<Event, T[]> {
+
+	private static final String AMBIGUOUS_ERROR =
+		"Skript cannot determine which function named '%s' to call. " +
+		"The following functions were matched: %s. " +
+		"Try clarifying the type of the arguments using the 'value within' expression.";
 
 	/**
 	 * Name of function that is called, for logging purposes.
@@ -85,8 +91,8 @@ public class FunctionReference<T> implements Contract, Executable<Event, T[]> {
 	private Contract contract;
 
 	public FunctionReference(
-			String functionName, @Nullable Node node, @Nullable String script,
-			@Nullable Class<? extends T>[] returnTypes, Expression<?>[] params
+		String functionName, @Nullable Node node, @Nullable String script,
+		@Nullable Class<? extends T>[] returnTypes, Expression<?>[] params
 	) {
 		this.functionName = functionName;
 		this.node = node;
@@ -99,17 +105,23 @@ public class FunctionReference<T> implements Contract, Executable<Event, T[]> {
 	public boolean validateParameterArity(boolean first) {
 		if (!first && script == null)
 			return false;
-		Signature<?> sign = Functions.getSignature(functionName, script);
+
+		Signature<?> sign = getRegisteredSignature();
+
 		if (sign == null)
 			return false;
+
 		// Not enough parameters
 		return parameters.length >= sign.getMinParameters();
 	}
 
+	private Class<?>[] parameterTypes;
+
 	/**
 	 * Validates this function reference. Prints errors if needed.
+	 *
 	 * @param first True if this is called while loading a script. False when
-	 * this is called when the function signature changes.
+	 *              this is called when the function signature changes.
 	 * @return True if validation succeeded.
 	 */
 	public boolean validateFunction(boolean first) {
@@ -119,7 +131,7 @@ public class FunctionReference<T> implements Contract, Executable<Event, T[]> {
 		function = null;
 		SkriptLogger.setNode(node);
 		Skript.debug("Validating function " + functionName);
-		Signature<?> sign = Functions.getSignature(functionName, script);
+		Signature<?> sign = getRegisteredSignature();
 
 		// Check if the requested function exists
 		if (sign == null) {
@@ -161,7 +173,7 @@ public class FunctionReference<T> implements Contract, Executable<Event, T[]> {
 				single = sign.single;
 			} else if (single && !sign.single) {
 				Skript.error("The function '" + functionName + "' was redefined with a different, incompatible return type, but is still used in other script(s)."
-						+ " These will continue to use the old version of the function until Skript restarts.");
+					+ " These will continue to use the old version of the function until Skript restarts.");
 				function = previousFunction;
 				return false;
 			}
@@ -253,6 +265,80 @@ public class FunctionReference<T> implements Contract, Executable<Event, T[]> {
 		return true;
 	}
 
+	// attempt to get the types of the parameters for this function reference
+	private void parseParameters() {
+		if (parameterTypes != null) {
+			return;
+		}
+
+		parameterTypes = new Class<?>[parameters.length];
+		for (int i = 0; i < parameters.length; i++) {
+			Expression<?> parsed = LiteralUtils.defendExpression(parameters[i]);
+			parameterTypes[i] = parsed.getReturnType();
+		}
+	}
+
+	/**
+	 * Attempts to get this function's signature.
+	 */
+	private Signature<?> getRegisteredSignature() {
+		parseParameters();
+
+		if (Skript.debug()) {
+			Skript.debug("Getting signature for '%s' with types %s",
+				functionName, Arrays.toString(Arrays.stream(parameterTypes).map(Class::getSimpleName).toArray()));
+		}
+
+		Retrieval<Signature<?>> attempt = FunctionRegistry.getRegistry().getSignature(script, functionName, parameterTypes);
+		if (attempt.result() == RetrievalResult.EXACT) {
+			return attempt.retrieved();
+		}
+
+		// if we can't find a signature based on param types, try to match any function
+		attempt = FunctionRegistry.getRegistry().getSignature(script, functionName);
+
+		if (attempt.result() == RetrievalResult.EXACT) {
+			return attempt.retrieved();
+		}
+
+		if (attempt.result() == RetrievalResult.AMBIGUOUS) {
+			ambiguousError(attempt.conflictingArgs());
+		}
+
+		return null;
+	}
+
+	/**
+	 * Attempts to get this function's registered implementation.
+	 */
+	private Function<?> getRegisteredFunction() {
+		parseParameters();
+
+		if (Skript.debug()) {
+			Skript.debug("Getting function '%s' with types %s",
+				functionName, Arrays.toString(Arrays.stream(parameterTypes).map(Class::getSimpleName).toArray()));
+		}
+
+		Retrieval<Function<?>> attempt = FunctionRegistry.getRegistry().getFunction(script, functionName, parameterTypes);
+
+		if (attempt.result() == RetrievalResult.EXACT) {
+			return attempt.retrieved();
+		}
+
+		// if we can't find a signature based on param types, try to match any function
+		attempt = FunctionRegistry.getRegistry().getFunction(script, functionName);
+
+		if (attempt.result() == RetrievalResult.EXACT) {
+			return attempt.retrieved();
+		}
+
+		if (attempt.result() == RetrievalResult.AMBIGUOUS) {
+			ambiguousError(attempt.conflictingArgs());
+		}
+
+		return null;
+	}
+
 	public @Nullable Function<? extends T> getFunction() {
 		return function;
 	}
@@ -273,7 +359,7 @@ public class FunctionReference<T> implements Contract, Executable<Event, T[]> {
 		// If needed, acquire the function reference
 		if (function == null)
 			//noinspection unchecked
-			function = (Function<? extends T>) Functions.getFunction(functionName, script);
+			function = (Function<? extends T>) getRegisteredFunction();
 
 		if (function == null) { // It might be impossible to resolve functions in some cases!
 			Skript.error("Couldn't resolve call for '" + functionName + "'.");
@@ -369,6 +455,7 @@ public class FunctionReference<T> implements Contract, Executable<Event, T[]> {
 
 	/**
 	 * The contract is used in preference to the function for determining return type, etc.
+	 *
 	 * @return The contract determining this function's parse-time hints, potentially this reference
 	 */
 	public Contract getContract() {
@@ -391,7 +478,7 @@ public class FunctionReference<T> implements Contract, Executable<Event, T[]> {
 		// If needed, acquire the function reference
 		if (function == null)
 			//noinspection unchecked
-			function = (Function<? extends T>) Functions.getFunction(functionName, script);
+			function = (Function<? extends T>) getRegisteredFunction();
 
 		if (function == null) { // It might be impossible to resolve functions in some cases!
 			Skript.error("Couldn't resolve call for '" + functionName + "'.");
@@ -417,6 +504,25 @@ public class FunctionReference<T> implements Contract, Executable<Event, T[]> {
 		}
 		return consigned;
 
+	}
+
+	private void ambiguousError(Class<?>[][] conflictingArgs) {
+		List<String> parts = new ArrayList<>();
+		for (Class<?>[] args : conflictingArgs) {
+			String argNames = Arrays.stream(args).map(arg -> {
+				String name = Classes.getExactClassName(arg);
+
+				if (name == null) {
+					return arg.getSimpleName();
+				} else {
+					return name.toLowerCase();
+				}
+			}).collect(Collectors.joining(", "));
+
+			parts.add("%s(%s)".formatted(functionName, argNames));
+		}
+
+		Skript.error(AMBIGUOUS_ERROR, functionName, StringUtils.join(parts, ", ", " and "));
 	}
 
 }

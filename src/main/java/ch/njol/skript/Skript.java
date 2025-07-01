@@ -1775,6 +1775,8 @@ public final class Skript extends JavaPlugin implements Listener {
 	 * @see String#formatted(Object...)
 	 */
 	public static void debug(String message, Object... objects) {
+		if (!debug())
+			return;
 		debug(message.formatted(objects));
 	}
 
@@ -1801,6 +1803,17 @@ public final class Skript extends JavaPlugin implements Listener {
 	public static void error(final @Nullable String error) {
 		if (error != null)
 			SkriptLogger.log(Level.SEVERE, error);
+	}
+
+	/**
+	 * Sends an error message with formatted objects.
+	 *
+	 * @param message The message to send
+	 * @param objects The objects to format the message with
+	 * @see String#formatted(Object...)
+	 */
+	public static void error(String message, Object... objects) {
+		error(message.formatted(objects));
 	}
 
 	/**
