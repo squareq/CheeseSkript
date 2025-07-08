@@ -80,7 +80,7 @@ public class EventValueExpression<T> extends SimpleExpression<T> implements Defa
 	 *  and then register it using {@code registry} ({@link SyntaxRegistry#register(SyntaxRegistry.Key, SyntaxInfo)}).
 	 */
 	@ApiStatus.Experimental
-	@Deprecated(since = "INSERT VERSION", forRemoval = true)
+	@Deprecated(since = "2.12", forRemoval = true)
 	public static <E extends EventValueExpression<T>, T> SyntaxInfo.Expression<E, T> register(SyntaxRegistry registry, Class<E> expressionClass, Class<T> returnType, String pattern) {
 		return register(registry, expressionClass, returnType, new String[]{pattern});
 	}
@@ -101,7 +101,7 @@ public class EventValueExpression<T> extends SimpleExpression<T> implements Defa
 	 *  and then register it using {@code registry} ({@link SyntaxRegistry#register(SyntaxRegistry.Key, SyntaxInfo)}).
 	 */
 	@ApiStatus.Experimental
-	@Deprecated(since = "INSERT VERSION", forRemoval = true)
+	@Deprecated(since = "2.12", forRemoval = true)
 	public static <E extends EventValueExpression<T>, T> DefaultSyntaxInfos.Expression<E, T> register(
 		SyntaxRegistry registry,
 		Class<E> expressionClass,

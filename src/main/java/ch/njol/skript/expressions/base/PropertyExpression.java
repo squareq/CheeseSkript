@@ -95,7 +95,7 @@ public abstract class PropertyExpression<F, T> extends SimpleExpression<T> {
 	 *  and then register it using {@code registry} ({@link SyntaxRegistry#register(SyntaxRegistry.Key, SyntaxInfo)}).
 	 */
 	@ApiStatus.Experimental
-	@Deprecated(since = "INSERT VERSION", forRemoval = true)
+	@Deprecated(since = "2.12", forRemoval = true)
 	public static <E extends Expression<T>, T> SyntaxInfo.Expression<E, T> register(SyntaxRegistry registry, Class<E> expressionClass, Class<T> returnType, String property, String fromType) {
 		SyntaxInfo.Expression<E, T> info = infoBuilder(expressionClass, returnType, property, fromType, false).build();
 		registry.register(SyntaxRegistry.EXPRESSION, info);
@@ -118,7 +118,7 @@ public abstract class PropertyExpression<F, T> extends SimpleExpression<T> {
 	 *  and then register it using {@code registry} ({@link SyntaxRegistry#register(SyntaxRegistry.Key, SyntaxInfo)}).
 	 */
 	@ApiStatus.Experimental
-	@Deprecated(since = "INSERT VERSION", forRemoval = true)
+	@Deprecated(since = "2.12", forRemoval = true)
 	public static <E extends Expression<T>, T> SyntaxInfo.Expression<E, T> registerDefault(SyntaxRegistry registry, Class<E> expressionClass, Class<T> returnType, String property, String fromType) {
 		SyntaxInfo.Expression<E, T> info = infoBuilder(expressionClass, returnType, property, fromType, true).build();
 		registry.register(SyntaxRegistry.EXPRESSION, info);

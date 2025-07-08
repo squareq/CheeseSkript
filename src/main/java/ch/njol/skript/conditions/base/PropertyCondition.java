@@ -89,7 +89,7 @@ public abstract class PropertyCondition<T> extends Condition implements Predicat
 	 *  and then register it using {@code registry} ({@link SyntaxRegistry#register(SyntaxRegistry.Key, SyntaxInfo)}).
 	 */
 	@ApiStatus.Experimental
-	@Deprecated(since = "INSERT VERSION", forRemoval = true)
+	@Deprecated(since = "2.12", forRemoval = true)
 	public static <E extends Condition> SyntaxInfo<E> register(SyntaxRegistry registry, Class<E> condition, String property, String type) {
 		return register(registry, condition, PropertyType.BE, property, type);
 	}
@@ -106,7 +106,7 @@ public abstract class PropertyCondition<T> extends Condition implements Predicat
 	 *  and then register it using {@code registry} ({@link SyntaxRegistry#register(SyntaxRegistry.Key, SyntaxInfo)}).
 	 */
 	@ApiStatus.Experimental
-	@Deprecated(since = "INSERT VERSION", forRemoval = true)
+	@Deprecated(since = "2.12", forRemoval = true)
 	public static <E extends Condition> SyntaxInfo<E> register(SyntaxRegistry registry, Class<E> condition, PropertyType propertyType, String property, String type) {
 		if (type.contains("%"))
 			throw new SkriptAPIException("The type argument must not contain any '%'s");
