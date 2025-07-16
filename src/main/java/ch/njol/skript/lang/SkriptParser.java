@@ -1126,6 +1126,20 @@ public class SkriptParser {
 			FunctionReference<T> functionReference = new FunctionReference<>(functionName, SkriptLogger.getNode(),
 					currentScript != null ? currentScript.getConfig().getFileName() : null, types, params);
 
+			attempt_list_parse:
+			if (unaryArgument.get() && !functionReference.validateParameterArity(true)) {
+				try (ParseLogHandler ignored = SkriptLogger.startParseLogHandler()) {
+					SkriptParser alternative = new SkriptParser(args, flags | PARSE_LITERALS, context);
+					params = this.getFunctionArguments(() -> alternative.suppressMissingAndOrWarnings()
+						.parseExpressionList(ignored, Object.class), args, unaryArgument);
+					ignored.clear();
+					if (params == null)
+						break attempt_list_parse;
+				}
+				functionReference = new FunctionReference<>(functionName, SkriptLogger.getNode(),
+					currentScript != null ? currentScript.getConfig().getFileName() : null, types, params);
+			}
+
 			if (!functionReference.validateFunction(true)) {
 				log.printError();
 				return null;
