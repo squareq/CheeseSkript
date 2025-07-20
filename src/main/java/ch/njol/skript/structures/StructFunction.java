@@ -44,12 +44,13 @@ public class StructFunction extends Structure {
 	public static final Priority PRIORITY = new Priority(400);
 
 	private static final Pattern SIGNATURE_PATTERN =
-			Pattern.compile("^(?:local )?function (" + Functions.functionNamePattern + ")\\((.*?)\\)(?:\\s*(?:::| returns )\\s*(.+))?$");
+			Pattern.compile("^(?:async )?(?:local )?function (" + Functions.functionNamePattern + ")\\((.*?)\\)(?:\\s*(?:::| returns )\\s*(.+))?$");
+
 	private static final AtomicBoolean VALIDATE_FUNCTIONS = new AtomicBoolean();
 
 	static {
 		Skript.registerStructure(StructFunction.class,
-			"[:local] function <.+>"
+			"[:async] [:local] function <.+>"
 		);
 	}
 
@@ -58,12 +59,14 @@ public class StructFunction extends Structure {
 	@Nullable
 	private Signature<?> signature;
 	private boolean local;
+	private boolean async;
 
 	@Override
 	public boolean init(Literal<?>[] literals, int matchedPattern, ParseResult parseResult, @Nullable EntryContainer entryContainer) {
 		assert entryContainer != null; // cannot be null for non-simple structures
 		this.source = entryContainer.getSource();
 		local = parseResult.hasTag("local");
+		async = parseResult.hasTag("async");
 		return true;
 	}
 
@@ -84,11 +87,16 @@ public class StructFunction extends Structure {
 		getParser().setCurrentEvent((local ? "local " : "") + "function", FunctionEvent.class);
 		signature = Functions.parseSignature(
 			getParser().getCurrentScript().getConfig().getFileName(),
-			matcher.group(1), matcher.group(2), matcher.group(3), local
+			matcher.group(1), matcher.group(2), matcher.group(3), local, async
 		);
 		getParser().deleteCurrentEvent();
 
 		// attempt registration
+		//CheeseSkript Start - Do not allow async functions to have a return statement.
+		if(signature.isAsync() && signature.getReturnType() != null){
+			Skript.error("Asynchronous functions cannot return anything.");
+			return false;
+		}
 		return signature != null && Functions.registerSignature(signature) != null;
 	}
 

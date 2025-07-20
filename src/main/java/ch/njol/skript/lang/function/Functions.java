@@ -78,7 +78,7 @@ public abstract class Functions {
 	 * Loads a script function from given node.
 	 * @param script The script the function is declared in
 	 * @param node Section node.
-	 * @param signature The signature of the function. Use {@link Functions#parseSignature(String, String, String, String, boolean)}
+	 * @param signature The signature of the function. Use {@link Functions#parseSignature(String, String, String, String, boolean, boolean)}
 	 * to get a new signature instance and {@link Functions#registerSignature(Signature)} to register the signature
 	 * @return Script function, or null if something went wrong.
 	 */
@@ -124,7 +124,7 @@ public abstract class Functions {
 	 * @return Parsed signature or null if something went wrong.
 	 * @see Functions#registerSignature(Signature)
 	 */
-	public static @Nullable Signature<?> parseSignature(String script, String name, String args, @Nullable String returnType, boolean local) {
+	public static @Nullable Signature<?> parseSignature(String script, String name, String args, @Nullable String returnType, boolean local, boolean async) {
 		List<Parameter<?>> parameters = Parameter.parse(args);
 		if (parameters == null)
 			return null;
@@ -147,14 +147,14 @@ public abstract class Functions {
 			}
 		}
 		//noinspection unchecked
-		return new Signature<>(script, name, parameters.toArray(new Parameter[0]), local, (ClassInfo<Object>) returnClass, singleReturn, null);
+		return new Signature<>(script, name, parameters.toArray(new Parameter[0]), local, async, (ClassInfo<Object>) returnClass, singleReturn, null);
 	}
 
 	/**
 	 * Registers the signature.
 	 * @param signature The signature to register.
 	 * @return Signature of function, or null if something went wrong.
-	 * @see Functions#parseSignature(String, String, String, String, boolean)
+	 * @see Functions#parseSignature(String, String, String, String, boolean, boolean)
 	 */
 	public static @Nullable Signature<?> registerSignature(Signature<?> signature) {
 		Retrieval<Signature<?>> existing;

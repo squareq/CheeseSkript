@@ -399,7 +399,7 @@ public class FunctionRegistryTest {
 
 		// construct a global function with a non-null script, which happens in script functions
 		Signature<Boolean> signature = new Signature<>(TEST_SCRIPT, FUNCTION_NAME, new Parameter<?>[0],
-			false, DefaultClasses.BOOLEAN, true, "");
+			false, false, DefaultClasses.BOOLEAN, true, "");
 		SimpleJavaFunction<Boolean> fn = new SimpleJavaFunction<>(signature) {
 			@Override
 			public Boolean @Nullable [] executeSimple(Object[][] params) {
