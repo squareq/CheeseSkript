@@ -10,6 +10,7 @@ import ch.njol.skript.command.Commands;
 import ch.njol.skript.command.ScriptCommand;
 import ch.njol.skript.command.ScriptCommandEvent;
 import ch.njol.skript.expressions.ExprParse;
+import ch.njol.skript.lang.DefaultExpressionUtils.DefaultExpressionError;
 import ch.njol.skript.lang.function.ExprFunctionCall;
 import ch.njol.skript.lang.function.FunctionReference;
 import ch.njol.skript.lang.function.Functions;
@@ -17,6 +18,7 @@ import ch.njol.skript.lang.parser.DefaultValueData;
 import ch.njol.skript.lang.parser.ParseStackOverflowException;
 import ch.njol.skript.lang.parser.ParserInstance;
 import ch.njol.skript.lang.parser.ParsingStack;
+import ch.njol.skript.lang.simplification.Simplifiable;
 import ch.njol.skript.lang.util.SimpleLiteral;
 import ch.njol.skript.localization.Language;
 import ch.njol.skript.localization.Message;
@@ -48,10 +50,17 @@ import org.skriptlang.skript.lang.script.Script;
 import org.skriptlang.skript.lang.script.ScriptWarning;
 import org.skriptlang.skript.registration.SyntaxInfo;
 import org.skriptlang.skript.registration.SyntaxRegistry;
-import ch.njol.skript.lang.simplification.Simplifiable;
 
 import java.lang.reflect.Array;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Deque;
+import java.util.EnumMap;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
@@ -238,10 +247,17 @@ public class SkriptParser {
 								types = parseResult.source.getElements(TypePatternElement.class);;
 							ExprInfo exprInfo = types.get(i).getExprInfo();
 							if (!exprInfo.isOptional) {
-								DefaultExpression<?> expr = getDefaultExpression(exprInfo, pattern);
-								if (!expr.init())
+								List<DefaultExpression<?>> exprs = getDefaultExpressions(exprInfo, pattern);
+								DefaultExpression<?> matchedExpr = null;
+								for (DefaultExpression<?> expr : exprs) {
+									if (expr.init()) {
+										matchedExpr = expr;
+										break;
+									}
+								}
+								if (matchedExpr == null)
 									continue patternsLoop;
-								parseResult.exprs[i] = expr;
+								parseResult.exprs[i] = matchedExpr;
 							}
 						}
 					}
@@ -327,27 +343,71 @@ public class SkriptParser {
 		return experimentalSyntax.isSatisfiedBy(experiments);
 	}
 
+	/**
+	 * Returns the {@link DefaultExpression} from the first {@link ClassInfo} stored in {@code exprInfo}.
+	 *
+	 * @param exprInfo The {@link ExprInfo} to check for {@link DefaultExpression}.
+	 * @param pattern The pattern used to create {@link ExprInfo}.
+	 * @return {@link DefaultExpression}.
+	 * @throws SkriptAPIException If the {@link DefaultExpression} is not valid, produces an error message for the reasoning of failure.
+	 */
 	private static @NotNull DefaultExpression<?> getDefaultExpression(ExprInfo exprInfo, String pattern) {
-		DefaultExpression<?> expr;
-		// check custom default values first.
 		DefaultValueData data = getParser().getData(DefaultValueData.class);
-		expr = data.getDefaultValue(exprInfo.classes[0].getC());
-
-		// then check classinfo
+		ClassInfo<?> classInfo = exprInfo.classes[0];
+		DefaultExpression<?> expr = data.getDefaultValue(classInfo.getC());
 		if (expr == null)
-			expr = exprInfo.classes[0].getDefaultExpression();
+			expr = classInfo.getDefaultExpression();
 
-		if (expr == null)
-			throw new SkriptAPIException("The class '" + exprInfo.classes[0].getCodeName() + "' does not provide a default expression. Either allow null (with %-" + exprInfo.classes[0].getCodeName() + "%) or make it mandatory [pattern: " + pattern + "]");
-		if (!(expr instanceof Literal) && (exprInfo.flagMask & PARSE_EXPRESSIONS) == 0)
-			throw new SkriptAPIException("The default expression of '" + exprInfo.classes[0].getCodeName() + "' is not a literal. Either allow null (with %-*" + exprInfo.classes[0].getCodeName() + "%) or make it mandatory [pattern: " + pattern + "]");
-		if (expr instanceof Literal && (exprInfo.flagMask & PARSE_LITERALS) == 0)
-			throw new SkriptAPIException("The default expression of '" + exprInfo.classes[0].getCodeName() + "' is a literal. Either allow null (with %-~" + exprInfo.classes[0].getCodeName() + "%) or make it mandatory [pattern: " + pattern + "]");
-		if (!exprInfo.isPlural[0] && !expr.isSingle())
-			throw new SkriptAPIException("The default expression of '" + exprInfo.classes[0].getCodeName() + "' is not a single-element expression. Change your pattern to allow multiple elements or make the expression mandatory [pattern: " + pattern + "]");
-		if (exprInfo.time != 0 && !expr.setTime(exprInfo.time))
-			throw new SkriptAPIException("The default expression of '" + exprInfo.classes[0].getCodeName() + "' does not have distinct time states. [pattern: " + pattern + "]");
-		return expr;
+		DefaultExpressionError errorType = DefaultExpressionUtils.isValid(expr, exprInfo, 0);
+		if (errorType == null) {
+			assert expr != null;
+			return expr;
+		}
+
+		throw new SkriptAPIException(errorType.getError(List.of(classInfo.getCodeName()), pattern));
+	}
+
+	/**
+	 * Returns all {@link DefaultExpression}s from all the {@link ClassInfo}s embedded in {@code exprInfo} that are valid.
+	 *
+	 * @param exprInfo The {@link ExprInfo} to check for {@link DefaultExpression}s.
+	 * @param pattern The pattern used to create {@link ExprInfo}.
+	 * @return All available {@link DefaultExpression}s.
+	 * @throws SkriptAPIException If no {@link DefaultExpression}s are valid, produces an error message for the reasoning of failure.
+	 */
+	static @NotNull List<DefaultExpression<?>> getDefaultExpressions(ExprInfo exprInfo, String pattern) {
+		if (exprInfo.classes.length == 1)
+			return new ArrayList<>(List.of(getDefaultExpression(exprInfo, pattern)));
+
+		DefaultValueData data = getParser().getData(DefaultValueData.class);
+
+		EnumMap<DefaultExpressionError, List<String>> failed = new EnumMap<>(DefaultExpressionError.class);
+		List<DefaultExpression<?>> passed = new ArrayList<>();
+		for (int i = 0; i < exprInfo.classes.length; i++) {
+			ClassInfo<?> classInfo = exprInfo.classes[i];
+			DefaultExpression<?> expr = data.getDefaultValue(classInfo.getC());
+			if (expr == null)
+				expr = classInfo.getDefaultExpression();
+
+			String codeName = classInfo.getCodeName();
+			DefaultExpressionError errorType = DefaultExpressionUtils.isValid(expr, exprInfo, i);
+
+			if (errorType != null) {
+				failed.computeIfAbsent(errorType, list -> new ArrayList<>()).add(codeName);
+			} else {
+				passed.add(expr);
+			}
+		}
+
+		if (!passed.isEmpty())
+			return passed;
+
+		List<String> errors = new ArrayList<>();
+		for (Entry<DefaultExpressionError, List<String>> entry : failed.entrySet()) {
+			String error = entry.getKey().getError(entry.getValue(), pattern);
+			errors.add(error);
+		}
+		throw new SkriptAPIException(StringUtils.join(errors, "\n"));
 	}
 
 	private static final Pattern VARIABLE_PATTERN = Pattern.compile("((the )?var(iable)? )?\\{.+\\}", Pattern.CASE_INSENSITIVE);
