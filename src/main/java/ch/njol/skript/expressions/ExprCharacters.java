@@ -38,12 +38,6 @@ import java.util.Objects;
 	"# 0123456789ABC... ...uvwxyz",
 	"send alphanumeric characters between \"0\" and \"z\""
 })
-/*
-TODO: Everything seems to look good. Just need to update Skript Documentation, as well as
-code explanations to #get and #init. Also, explain where BCD starts & ends. A little testing of
-both syntaxes wouldn't hurt as well.
- */
-
 @Since("2.8.0")
 public class ExprCharacters extends SimpleExpression<String> {
 
