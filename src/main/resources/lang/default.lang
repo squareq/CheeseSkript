@@ -3120,6 +3120,8 @@ types:
 	damagesource: damage source¦s @a
 	damagetype: damage type¦s @a
 	frogvariant: frog variant¦s @a
+	itemcomponent: item component¦s @an
+	equippablecomponent: equippable component¦s @an
 
 	# Skript
 	weathertype: weather type¦s @a
