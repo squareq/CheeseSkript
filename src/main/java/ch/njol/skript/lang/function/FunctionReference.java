@@ -4,12 +4,10 @@ import ch.njol.skript.Skript;
 import ch.njol.skript.SkriptAPIException;
 import ch.njol.skript.classes.ClassInfo;
 import ch.njol.skript.config.Node;
-import ch.njol.skript.lang.Expression;
-import ch.njol.skript.lang.KeyProviderExpression;
-import ch.njol.skript.lang.KeyedValue;
-import ch.njol.skript.lang.SkriptParser;
+import ch.njol.skript.lang.*;
 import ch.njol.skript.lang.function.FunctionRegistry.Retrieval;
 import ch.njol.skript.lang.function.FunctionRegistry.RetrievalResult;
+import ch.njol.skript.lang.parser.ParserInstance;
 import ch.njol.skript.log.RetainingLogHandler;
 import ch.njol.skript.log.SkriptLogger;
 import ch.njol.skript.registrations.Classes;
@@ -294,7 +292,7 @@ public class FunctionReference<T> implements Contract, Executable<Event, T[]> {
 	/**
 	 * Attempts to get this function's signature.
 	 */
-	private Signature<?> getRegisteredSignature() {
+	public Signature<?> getRegisteredSignature() {
 		parseParameters();
 
 		if (Skript.debug()) {

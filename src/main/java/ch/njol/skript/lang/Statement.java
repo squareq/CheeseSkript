@@ -1,11 +1,15 @@
 package ch.njol.skript.lang;
 
 import ch.njol.skript.Skript;
+import ch.njol.skript.config.Node;
 import ch.njol.skript.config.SectionNode;
 import ch.njol.skript.lang.function.EffFunctionCall;
+import ch.njol.skript.lang.function.FunctionReference;
 import ch.njol.skript.lang.parser.ParserInstance;
 import ch.njol.skript.log.ParseLogHandler;
 import ch.njol.skript.log.SkriptLogger;
+import ch.njol.util.Kleenean;
+import org.bukkit.event.Event;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Iterator;
@@ -19,6 +23,7 @@ import java.util.List;
  */
 public abstract class Statement extends TriggerItem implements SyntaxElement {
 
+	private KeyedValue<?>[] keyedValue = null;
 
 	public static @Nullable Statement parse(String input, String defaultError) {
 		return parse(input, null, defaultError);
@@ -77,4 +82,18 @@ public abstract class Statement extends TriggerItem implements SyntaxElement {
 		}
 	}
 
+	@Override
+	public void setKeyedValue(KeyedValue<?>[] keyedValue) {
+		this.keyedValue = keyedValue.clone();
+	}
+
+	@Override
+	public @Nullable KeyedValue<?>[] getKeyedValue() {
+		return this.keyedValue;
+	}
+
+	@Override
+	public boolean isElementDelayed() {
+		return getKeyedValue() != null;
+	}
 }

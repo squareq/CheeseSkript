@@ -252,7 +252,33 @@ public class SkriptParser {
 
 					if (!checkExperimentalSyntax(element))
 						continue;
+					FunctionReference functionReference;
+					Boolean dontInit = false;
+					for (int i = 0; i < parseResult.exprs.length; i++) {
+						if (parseResult.exprs[i] != null) {
+							if(parseResult.exprs[i] instanceof ExprFunctionCall<?>){
+								functionReference = ((ExprFunctionCall<?>) parseResult.exprs[i]).getFunctionReference();
+								if(functionReference.getRegisteredSignature().isAsync()){
+									dontInit = true;
+									break;
+								}
+							}
+						}
+					}
 
+
+					if(dontInit){
+						Object[] storedValues = {parseResult.exprs, matchedPattern, getParser().getHasDelayBefore(), parseResult};
+						element.setKeyedValue(KeyedValue.zip(storedValues, null));
+						for (Expression<?> expr : parseResult.exprs) {
+							if (expr instanceof UnparsedLiteral unparsedLiteral && unparsedLiteral.multipleWarning())
+								break;
+						}
+						if (doSimplification && element instanceof Simplifiable<?> simplifiable)
+							//noinspection unchecked
+							return (T) simplifiable.simplify();
+						return element;
+					}
 					boolean success = element.preInit() && element.init(parseResult.exprs, matchedPattern, getParser().getHasDelayBefore(), parseResult);
 					if (success) {
 						// Check if any expressions are 'UnparsedLiterals' and if applicable for multiple info warning.

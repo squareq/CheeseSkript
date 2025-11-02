@@ -92,11 +92,6 @@ public class StructFunction extends Structure {
 		getParser().deleteCurrentEvent();
 
 		// attempt registration
-		//CheeseSkript Start - Do not allow async functions to have a return statement.
-		if(signature != null && signature.isAsync() && signature.getReturnType() != null){
-			Skript.error("Asynchronous functions cannot return anything.");
-			return false;
-		}
 		return signature != null && Functions.registerSignature(signature) != null;
 	}
 

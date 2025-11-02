@@ -5,11 +5,7 @@ import ch.njol.skript.config.Node;
 import ch.njol.skript.config.SectionNode;
 import ch.njol.skript.config.SimpleNode;
 import ch.njol.skript.events.bukkit.PreScriptLoadEvent;
-import ch.njol.skript.lang.ExecutionIntent;
-import ch.njol.skript.lang.Section;
-import ch.njol.skript.lang.SkriptParser;
-import ch.njol.skript.lang.Statement;
-import ch.njol.skript.lang.TriggerItem;
+import ch.njol.skript.lang.*;
 import ch.njol.skript.lang.parser.ParserInstance;
 import ch.njol.skript.log.CountingLogHandler;
 import ch.njol.skript.log.LogEntry;
@@ -972,9 +968,11 @@ public class ScriptLoader {
 				continue;
 
 			TriggerItem item = null;
+			Statement statement = null;
 			if (subNode instanceof SimpleNode) {
 				long start = System.currentTimeMillis();
-				item = Statement.parse(expr, items, "Can't understand this condition/effect: " + expr);
+				statement = Statement.parse(expr, items, "Can't understand this condition/effect: " + expr);
+				item = (TriggerItem) statement;
 				if (item == null)
 					continue;
 				long requiredTime = SkriptConfig.longParseTimeWarningThreshold.value().getAs(Timespan.TimePeriod.MILLISECOND);
@@ -987,6 +985,9 @@ public class ScriptLoader {
 						);
 				}
 
+				if(statement.isElementDelayed()){
+					item.setCopy(statement, statement.getKeyedValue());
+				}
 				if (Skript.debug() || subNode.debug())
 					Skript.debug(SkriptColor.replaceColorChar(parser.getIndentation() + item.toString(null, true)));
 
