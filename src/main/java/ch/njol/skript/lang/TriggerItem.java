@@ -1,6 +1,7 @@
 package ch.njol.skript.lang;
 
 import ch.njol.skript.Skript;
+import ch.njol.skript.lang.simplification.Simplifiable;
 import ch.njol.skript.sections.SecLoop;
 import ch.njol.skript.util.SkriptColor;
 import ch.njol.util.Kleenean;
@@ -91,7 +92,7 @@ public abstract class TriggerItem implements Debuggable {
 					BukkitRunnable delayedPoint = new BukkitRunnable() {
 						@Override
 						public void run() {
-							if (delayedTriggerItem.getSyntaxElement().preInit() && delayedTriggerItem.getSyntaxElement().init(expressions, matchedPattern, delay, parseResult)){
+							if (delayedTriggerItem.getSyntaxElement().preInit() && delayedTriggerItem.getSyntaxElement().init(expressions, matchedPattern, delay, parseResult)) {
 								delayedTriggerItem.run(event);
 							}
 						}
@@ -107,11 +108,11 @@ public abstract class TriggerItem implements Debuggable {
 					delayedPoint.runTaskLater(Skript.getInstance(), 40);
 					resumePoint.runTaskLater(Skript.getInstance(), 80);
 					break;
-				}
-
-				triggerItem = triggerItem.walk(event);
-				if(triggerItem == null){
-					break;
+				} else {
+					triggerItem = triggerItem.walk(event);
+					if (triggerItem == null) {
+						break;
+					}
 				}
 			}
 			return true;
