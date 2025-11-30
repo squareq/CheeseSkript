@@ -1,9 +1,13 @@
 package ch.njol.skript.lang;
 
 import ch.njol.skript.Skript;
+import ch.njol.skript.lang.simplification.Simplifiable;
+import ch.njol.skript.sections.SecLoop;
 import ch.njol.skript.util.SkriptColor;
+import ch.njol.util.Kleenean;
 import ch.njol.util.StringUtils;
 import org.bukkit.event.Event;
+import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.Nullable;
 import org.skriptlang.skript.lang.script.Script;
 
@@ -21,6 +25,9 @@ public abstract class TriggerItem implements Debuggable {
 
 	protected @Nullable TriggerSection parent = null;
 	private @Nullable TriggerItem next = null;
+	private @Nullable Boolean delay = false;
+	private @Nullable SyntaxElement syntaxElement;
+	private @Nullable KeyedValue<?>[] keyedValue = null;
 
 	protected TriggerItem() {}
 
@@ -63,9 +70,51 @@ public abstract class TriggerItem implements Debuggable {
 	public static boolean walk(TriggerItem start, Event event) {
 		TriggerItem triggerItem = start;
 		try {
-			while (triggerItem != null)
-				triggerItem = triggerItem.walk(event);
+			while (triggerItem != null) {
+				if(triggerItem.isDelayed()){
+					final Expression<?>[] expressions = (Expression<?>[]) triggerItem.getKeyedValues()[0].value();
+					final Integer matchedPattern = (Integer) triggerItem.getKeyedValues()[1].value();
+					final Kleenean delay = (Kleenean) triggerItem.getKeyedValues()[2].value();
+					final SkriptParser.ParseResult parseResult = (SkriptParser.ParseResult) triggerItem.getKeyedValues()[3].value();
+					final TriggerItem delayedTriggerItem = triggerItem; //The trigger item that is delayed.
+					final TriggerItem resumeTrigger = triggerItem.getNext(); //Resume at the next trigger after the delay.
+					BukkitRunnable resumePoint = new BukkitRunnable() { //
+						@Override
+						public void run() {
+							TriggerItem triggerItem = resumeTrigger;
+							while (triggerItem != null){
+								triggerItem = triggerItem.walk(event);
+								if(triggerItem == null)
+									break;
+							}
+						}
+					};
+					BukkitRunnable delayedPoint = new BukkitRunnable() {
+						@Override
+						public void run() {
+							if (delayedTriggerItem.getSyntaxElement().preInit() && delayedTriggerItem.getSyntaxElement().init(expressions, matchedPattern, delay, parseResult)) {
+								delayedTriggerItem.run(event);
+							}
+						}
 
+					};
+					/*
+					some async function stuff
+					 */
+					for(int i = 0; i < expressions.length; i++) {
+						Expression e = expressions[i];
+						e.getAll(event);
+					}
+					delayedPoint.runTaskLater(Skript.getInstance(), 40);
+					resumePoint.runTaskLater(Skript.getInstance(), 80);
+					break;
+				} else {
+					triggerItem = triggerItem.walk(event);
+					if (triggerItem == null) {
+						break;
+					}
+				}
+			}
 			return true;
 		} catch (StackOverflowError err) {
 			Trigger trigger = start.getTrigger();
@@ -106,6 +155,29 @@ public abstract class TriggerItem implements Debuggable {
 		return null;
 	}
 
+
+	public void setCopy(SyntaxElement syntaxElement, KeyedValue<?>[] keyedValues){
+		this.syntaxElement = syntaxElement;
+		this.keyedValue = keyedValues;
+		this.setDelay(true);
+	}
+
+	public @Nullable SyntaxElement getSyntaxElement(){
+		return this.syntaxElement;
+	}
+
+	public @Nullable KeyedValue<?>[] getKeyedValues(){
+		return this.keyedValue;
+	};
+
+	protected boolean isDelayed(){
+		return delay;
+	}
+
+	private void setDelay(boolean b){
+		delay = b;
+	}
+
 	/**
 	 * how much to indent each level
 	 */
@@ -132,7 +204,11 @@ public abstract class TriggerItem implements Debuggable {
 
 	@Override
 	public final String toString() {
-		return toString(null, false);
+		try{
+			return toString(null, false);
+		} catch (NullPointerException e){
+			return "trigger item";
+		}
 	}
 
 	public TriggerItem setParent(@Nullable TriggerSection parent) {
@@ -166,7 +242,7 @@ public abstract class TriggerItem implements Debuggable {
 	/**
 	 * This method guarantees to return next {@link TriggerItem} after this item.
 	 * This is not always the case for {@link #getNext()}, for example, {@code getNext()}
-	 * of a {@link ch.njol.skript.sections.SecLoop loop section} usually returns itself.
+	 * of a {@link SecLoop loop section} usually returns itself.
 	 * 
 	 * @return The next {@link TriggerItem}.
 	 */

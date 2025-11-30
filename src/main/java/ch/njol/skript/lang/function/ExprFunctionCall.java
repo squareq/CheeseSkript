@@ -47,7 +47,10 @@ public class ExprFunctionCall<T> extends SimpleExpression<T> implements KeyProvi
 
 	@Override
 	protected T @Nullable [] get(Event event) {
-		Object[] values = function.execute(event);
+		Object[] values;
+		values = this.getReturnValues();
+		if(values == null)
+			values = function.execute(event);
 		String[] keys = function.returnedKeys();
 		function.resetReturnValue();
 
@@ -71,6 +74,23 @@ public class ExprFunctionCall<T> extends SimpleExpression<T> implements KeyProvi
 			cache.put(event, generateNumericalKeys(convertedValues.length));
 		}
 		return convertedValues;
+
+	}
+
+
+	public FunctionReference<?> getFunctionReference(){
+		return this.function;
+	}
+
+	public @Nullable Object[] getReturnValues() {
+		try{
+			@Nullable ScriptFunction scriptFunction = (ScriptFunction) function.getFunction();
+			if(scriptFunction != null)
+				return scriptFunction.getReturnValues();
+		} catch (Exception e){
+			return null;
+		}
+		return null;
 	}
 
 	@Override

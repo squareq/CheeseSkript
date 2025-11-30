@@ -36,6 +36,10 @@ public class Signature<T> {
 	final boolean local;
 
 	/**
+	 * Whether this function is asynchronous.
+	 */
+	final boolean async;
+	/**
 	 * Return type of this function. For functions that return nothing, this
 	 * is null. void is never used as return type, because it is not registered
 	 * to Skript's type system.
@@ -65,7 +69,7 @@ public class Signature<T> {
 
 	public Signature(String script,
 					 String name,
-					 Parameter<?>[] parameters, boolean local,
+					 Parameter<?>[] parameters, boolean local, boolean async,
 					 @Nullable ClassInfo<T> returnType,
 					 boolean single,
 					 @Nullable String originClassPath,
@@ -74,6 +78,7 @@ public class Signature<T> {
 		this.name = name;
 		this.parameters = parameters;
 		this.local = local;
+		this.async = async;
 		this.returnType = returnType;
 		this.single = single;
 		this.originClassPath = originClassPath;
@@ -84,15 +89,15 @@ public class Signature<T> {
 
 	public Signature(String script,
 					 String name,
-					 Parameter<?>[] parameters, boolean local,
+					 Parameter<?>[] parameters, boolean local, boolean async,
 					 @Nullable ClassInfo<T> returnType,
 					 boolean single,
 					 @Nullable String originClassPath) {
-		this(script, name, parameters, local, returnType, single, originClassPath, null);
+		this(script, name, parameters, local, async, returnType, single, originClassPath, null);
 	}
 
-	public Signature(String script, String name, Parameter<?>[] parameters, boolean local, @Nullable ClassInfo<T> returnType, boolean single) {
-		this(script, name, parameters, local, returnType, single, null);
+	public Signature(String script, String name, Parameter<?>[] parameters, boolean local, boolean async, @Nullable ClassInfo<T> returnType, boolean single) {
+		this(script, name, parameters, local, async, returnType, single, null);
 	}
 	
 	public String getName() {
@@ -110,6 +115,10 @@ public class Signature<T> {
 
 	public boolean isLocal() {
 		return local;
+	}
+
+	public boolean isAsync() {
+		return async;
 	}
 
 	public @Nullable ClassInfo<T> getReturnType() {

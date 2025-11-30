@@ -292,7 +292,7 @@ public class FunctionReference<T> implements Contract, Executable<Event, T[]> {
 	/**
 	 * Attempts to get this function's signature.
 	 */
-	private Signature<?> getRegisteredSignature() {
+	public Signature<?> getRegisteredSignature() {
 		parseParameters();
 
 		if (Skript.debug()) {

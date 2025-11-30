@@ -5,6 +5,8 @@ import ch.njol.skript.lang.parser.ParserInstance;
 import ch.njol.util.Kleenean;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+import org.skriptlang.skript.registration.SyntaxInfo;
 
 /**
  * Represents a general part of the syntax.
@@ -48,5 +50,15 @@ public interface SyntaxElement {
 	 */
 	@Contract(pure = true)
 	@NotNull String getSyntaxTypeName();
+
+	default @Nullable KeyedValue<?>[] getKeyedValue(){
+		return null;
+	}
+
+	default void setKeyedValue(KeyedValue<?>[] keyedValue) {};
+
+	default boolean isElementDelayed(){
+		return false;
+	}
 
 }

@@ -1,0 +1,15 @@
+async local function Foo() :: string:
+	return "Foo"
+
+async local function Addition(n1: integer, n2: integer) :: integer:
+	return {_n1} + {_n2}
+
+async function randomNumber() :: number:
+	return a random number between 1000 and 999999
+
+test "async functions":
+	set {_foo} to Foo()
+	assert {_foo} is "Foo" with "foo function failed"
+	set {_randomnumber} to randomNumber()
+	assert {_randomnumber} is not randomNumber() with "random number function failed"
+	assert Addition(5, 5) is 10 with "addition function failed"

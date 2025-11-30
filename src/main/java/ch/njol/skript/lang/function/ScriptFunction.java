@@ -1,5 +1,6 @@
 package ch.njol.skript.lang.function;
 
+import ch.njol.skript.Skript;
 import ch.njol.skript.classes.ClassInfo;
 import ch.njol.skript.config.SectionNode;
 import ch.njol.skript.lang.*;
@@ -8,6 +9,7 @@ import ch.njol.skript.lang.util.SimpleEvent;
 import ch.njol.skript.variables.HintManager;
 import ch.njol.skript.variables.Variables;
 import org.bukkit.event.Event;
+import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -68,8 +70,18 @@ public class ScriptFunction<T> extends Function<T> implements ReturnHandler<T> {
 				}
 			}
 		}
+		if(event.getFunction().getSignature().isAsync()){
+			new BukkitRunnable() {
 
-		trigger.execute(event);
+				@Override
+				public void run() {
+					trigger.execute(event);
+				}
+
+			}.runTaskAsynchronously(Skript.getInstance());
+		} else{
+			trigger.execute(event);
+		}
 		ClassInfo<T> returnType = getReturnType();
 		return returnType != null ? returnValues : null;
 	}
@@ -100,11 +112,13 @@ public class ScriptFunction<T> extends Function<T> implements ReturnHandler<T> {
 
 	@Override
 	public final void returnValues(Event event, Expression<? extends T> value) {
-		assert !returnValueSet;
-		returnValueSet = true;
 		this.returnValues = value.getArray(event);
 		if (KeyProviderExpression.canReturnKeys(value))
 			this.returnKeys = ((KeyProviderExpression<?>) value).getArrayKeys(event);
+	}
+
+	public final T[] getReturnValues(){
+		return this.returnValues;
 	}
 
 	@Override
