@@ -95,6 +95,7 @@ public class EffScriptFile extends Effect {
 	@Override
 	protected void execute(Event event) {
 		Set<CommandSender> recipients = new HashSet<>();
+		recipients.add(Bukkit.getConsoleSender());
 		if (printErrors) {
 			recipients.addAll(Bukkit.getOnlinePlayers().stream()
 				.filter(player -> player.hasPermission("skript.reloadnotify"))
