@@ -89,6 +89,15 @@ public class Signature<T> implements org.skriptlang.skript.common.function.Signa
 		calls = Collections.newSetFromMap(new WeakHashMap<>());
 	}
 
+	public Signature(@Nullable String script,
+					 String name,
+					 org.skriptlang.skript.common.function.Parameter<?>[] parameters,
+					 @Nullable Class<T> returnType,
+					 boolean single,
+					 @Nullable Contract contract) {
+		this(script, name, parameters, false, returnType, single, contract);
+	}
+
 	/**
 	 * Creates a new signature.
 	 *
@@ -101,10 +110,12 @@ public class Signature<T> implements org.skriptlang.skript.common.function.Signa
 	public Signature(@Nullable String script,
 					 String name,
 					 org.skriptlang.skript.common.function.Parameter<?>[] parameters,
+					 boolean async,
 					 @Nullable Class<T> returnType,
 					 boolean single,
 					 @Nullable Contract contract) {
 		this.parameters = new Parameter[parameters.length];
+		this.async = async;
 		for (int i = 0; i < parameters.length; i++) {
 			org.skriptlang.skript.common.function.Parameter<?> parameter = parameters[i];
 			this.parameters[i] = new Parameter<>(parameter.name(),

@@ -126,7 +126,7 @@ public class ScriptFunction<T> extends Function<T> implements ReturnHandler<T> {
 
 	@Override
 	public final void returnValues(Event event, Expression<? extends T> value) {
-		this.returnValues = value.getArray(event);
+		this.returnValues.set(value.getArray(event));
 		returnValueSet.set(true);
 		this.returnValues.set(value.getArray(event));
 		if (KeyProviderExpression.canReturnKeys(value))
@@ -134,7 +134,7 @@ public class ScriptFunction<T> extends Function<T> implements ReturnHandler<T> {
 	}
 
 	public final T[] getReturnValues(){
-		return this.returnValues;
+		return this.returnValues.get();
 	}
 
 	@Override
