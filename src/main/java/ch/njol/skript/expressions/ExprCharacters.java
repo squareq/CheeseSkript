@@ -2,7 +2,7 @@ package ch.njol.skript.expressions;
 
 import ch.njol.skript.Skript;
 import ch.njol.skript.doc.Description;
-import ch.njol.skript.doc.Examples;
+import ch.njol.skript.doc.Example;
 import ch.njol.skript.doc.Name;
 import ch.njol.skript.doc.Since;
 import ch.njol.skript.lang.Expression;
@@ -28,16 +28,18 @@ import java.util.Objects;
 	"If strings of more than one character are given, only the first character of each is used.",
 	"To get all of the characters in a string, simply use the %all the characters in {_string}% pattern."
 })
-@Examples({
-	"loop characters from \"a\" to \"f\":",
-		"\tbroadcast \"%loop-value%\"",
-	"",
-	"# 0123456789:;<=>?@ABC... ...uvwxyz",
-	"send characters between \"0\" and \"z\"",
-	"",
-	"# 0123456789ABC... ...uvwxyz",
-	"send alphanumeric characters between \"0\" and \"z\""
-})
+@Example("""
+	loop characters from "a" to "f":
+		broadcast "%loop-value%"
+	""")
+@Example("""
+	# 0123456789:;<=>?@ABC... ...uvwxyz
+	send characters between "0" and "z"
+	""")
+@Example("""
+	# 0123456789ABC... ...uvwxyz
+	send alphanumeric characters between "0" and "z"
+	""")
 @Since("2.8.0")
 public class ExprCharacters extends SimpleExpression<String> {
 

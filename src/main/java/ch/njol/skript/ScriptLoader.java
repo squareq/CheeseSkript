@@ -14,7 +14,6 @@ import ch.njol.skript.log.SkriptLogger;
 import ch.njol.skript.structures.StructOptions.OptionsData;
 import ch.njol.skript.test.runner.TestMode;
 import ch.njol.skript.util.ExceptionUtils;
-import ch.njol.skript.util.SkriptColor;
 import ch.njol.skript.util.Task;
 import ch.njol.skript.util.Timespan;
 import ch.njol.skript.variables.HintManager;
@@ -24,6 +23,7 @@ import org.bukkit.Bukkit;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.UnknownNullability;
+import org.skriptlang.skript.bukkit.text.TextComponentParser;
 import org.skriptlang.skript.lang.script.Script;
 import org.skriptlang.skript.lang.script.ScriptWarning;
 import org.skriptlang.skript.lang.structure.Structure;
@@ -284,12 +284,12 @@ public class ScriptLoader {
 
 	/**
 	 * Returns the executor used for submitting tasks based on the user config.sk settings.
-	 * 
+	 *
 	 * The thread count will be based on the value of {@link #asyncLoaderSize}.
 	 * <p>
 	 * You may also use class {@link ch.njol.skript.util.Task} and the appropriate constructor
 	 * to run tasks on the script loader executor.
-	 * 
+	 *
 	 * @return the executor used for submitting tasks. Can be null if called before Skript loads config.sk
 	 */
 	@UnknownNullability
@@ -329,7 +329,7 @@ public class ScriptLoader {
 
 		if (loaderThreads.size() != size)
 			throw new IllegalStateException();
-		
+
 		executor = Executors.newFixedThreadPool(asyncLoaderSize, new ThreadFactory() {
 			private final AtomicInteger threadId = new AtomicInteger(0);
 
@@ -489,7 +489,7 @@ public class ScriptLoader {
 			return CompletableFuture.completedFuture(new ScriptInfo());
 
 		eventRegistry().events(ScriptPreInitEvent.class)
-				.forEach(event -> event.onPreInit(configs));
+			.forEach(event -> event.onPreInit(configs));
 		//noinspection deprecation - we still need to call it
 		Bukkit.getPluginManager().callEvent(new PreScriptLoadEvent(configs));
 
@@ -525,12 +525,12 @@ public class ScriptLoader {
 					// this nest of pairs is terrible, but we need to keep the reference to the modifiable structures list
 					record LoadingStructure (LoadingScriptInfo loadingScriptInfo, Structure structure) {}
 					List<LoadingStructure> loadingStructures = scripts.stream()
-							.flatMap(info -> { // Flatten each entry down to a stream of Script-Structure pairs
-								return info.structures.stream()
-										.map(structure -> new LoadingStructure(info, structure));
-							})
-							.sorted(Comparator.comparing(pair -> pair.structure().getPriority()))
-							.collect(Collectors.toCollection(ArrayList::new));
+						.flatMap(info -> { // Flatten each entry down to a stream of Script-Structure pairs
+							return info.structures.stream()
+								.map(structure -> new LoadingStructure(info, structure));
+						})
+						.sorted(Comparator.comparing(pair -> pair.structure().getPriority()))
+						.collect(Collectors.toCollection(ArrayList::new));
 
 					// pre-loading
 					loadingStructures.removeIf(loadingStructure -> {
@@ -725,7 +725,7 @@ public class ScriptLoader {
 			loadedScripts.add(script);
 
 			ScriptLoader.eventRegistry().events(ScriptInitEvent.class)
-					.forEach(event -> event.onInit(script));
+				.forEach(event -> event.onInit(script));
 			return null;
 		};
 		if (isAsync()) { // Need to delegate to main thread
@@ -812,7 +812,7 @@ public class ScriptLoader {
 
 		try {
 			String name = Skript.getInstance().getDataFolder().toPath().toAbsolutePath()
-					.resolve(Skript.SCRIPTSFOLDER).relativize(file.toPath().toAbsolutePath()).toString();
+				.resolve(Skript.SCRIPTSFOLDER).relativize(file.toPath().toAbsolutePath()).toString();
 			return loadStructure(Files.newInputStream(file.toPath()), name);
 		} catch (IOException e) {
 			Skript.error("Could not load " + file.getName() + ": " + ExceptionUtils.toString(e));
@@ -1020,11 +1020,9 @@ public class ScriptLoader {
 				continue;
 
 			TriggerItem item = null;
-			Statement statement = null;
 			if (subNode instanceof SimpleNode) {
 				long start = System.currentTimeMillis();
-				statement = Statement.parse(expr, items, "Can't understand this condition/effect: " + expr);
-				item = (TriggerItem) statement;
+				item = Statement.parse(expr, items, "Can't understand this condition/effect: " + expr);
 				if (item == null)
 					continue;
 				long requiredTime = SkriptConfig.longParseTimeWarningThreshold.value().getAs(Timespan.TimePeriod.MILLISECOND);
@@ -1037,11 +1035,8 @@ public class ScriptLoader {
 						);
 				}
 
-				if(statement.isElementDelayed()){
-					item.setCopy(statement, statement.getKeyedValue());
-				}
 				if (Skript.debug() || subNode.debug())
-					Skript.debug(SkriptColor.replaceColorChar(parser.getIndentation() + item.toString(null, true)));
+					Skript.debug(TextComponentParser.instance().escape(parser.getIndentation() + item.toString(null, true)));
 
 				items.add(item);
 			} else if (subNode instanceof SectionNode subSection) {
@@ -1069,15 +1064,34 @@ public class ScriptLoader {
 
 					if (item != null)
 						break find_section;
-					Collection<LogEntry> errors = handler.getErrors();
 
 					// restore the failure log if:
 					// 1. there are no errors from the statement parse
 					// 2. the error message is the default one from the statement parse
 					// 3. the backup log contains a message about the section being claimed
-					if (errors.isEmpty()
-						|| errors.iterator().next().getMessage().contains("Can't understand this condition/effect:")
-						|| backup.getErrors().iterator().next().getMessage().contains("tried to claim the current section, but it was already claimed by")
+					// 4. the backup log contains an explicit error and the current error message is about no syntax managing the section
+					if (!handler.hasErrors()) {
+						handler.restore(backup);
+						continue;
+					}
+
+					LogEntry errorEntry = handler.getFirstError();
+					assert errorEntry != null;
+					String error = errorEntry.getMessage();
+
+					if (error.contains("Can't understand this condition/effect:")) {
+						handler.restore(backup);
+						continue;
+					}
+
+					LogEntry backupErrorEntry = backup.getFirstError();
+					if (backupErrorEntry == null)
+						continue;
+					String backupError = backupErrorEntry.getMessage();
+
+					if (backupError.contains("tried to claim the current section, but it was already claimed by")
+						|| (!backupError.contains("Can't understand this section: ")
+						&& error.contains("is a valid statement but cannot function as a section (:) because there is no syntax in the line to manage it."))
 					) {
 						handler.restore(backup);
 					}
@@ -1094,7 +1108,7 @@ public class ScriptLoader {
 					handler.clear();
 					handler.printLog();
 					if (item != null && (Skript.debug() || subNode.debug()))
-						Skript.debug(SkriptColor.replaceColorChar(parser.getIndentation() + item.toString(null, true)));
+						Skript.debug(TextComponentParser.instance().escape(parser.getIndentation() + item.toString(null, true)));
 					afterParse.printLog();
 				}
 
@@ -1104,9 +1118,9 @@ public class ScriptLoader {
 			}
 
 			if (executionStops
-					&& !SkriptConfig.disableUnreachableCodeWarnings.value()
-					&& parser.isActive()
-					&& !parser.getCurrentScript().suppressesWarning(ScriptWarning.UNREACHABLE_CODE)) {
+				&& !SkriptConfig.disableUnreachableCodeWarnings.value()
+				&& parser.isActive()
+				&& !parser.getCurrentScript().suppressesWarning(ScriptWarning.UNREACHABLE_CODE)) {
 				Skript.warning("Unreachable code. The previous statement stops further execution.");
 			}
 			executionStops = item.executionIntent() != null;
