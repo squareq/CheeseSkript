@@ -856,6 +856,7 @@ public final class BukkitEventValues {
 			.getter(event -> event.getEntity().getProfession())
 			.time(Time.PAST)
 			.build());
+		org.bcdtech.skript.bukkit.classes.data.BukkitEventValues.register(registry);
 
 	}
 

@@ -2527,6 +2527,14 @@ unleash reasons:
 	player_unleash: player unleash, player unleashed, unleashed by player
 	unknown: unknown
 
+# -- Map View Scales --
+map view scale:
+	close: close
+	closest: closest
+	far: far
+	farthest: farthest
+	normal: normal
+
 # -- Item Flags --
 item flags:
 	hide_additional_tooltip: hide additional tooltip, additional tooltip hidden, hidden additional tooltip

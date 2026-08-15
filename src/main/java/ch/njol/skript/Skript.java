@@ -36,6 +36,7 @@ import ch.njol.util.coll.iterator.CheckedIterator;
 import ch.njol.util.coll.iterator.EnumerationIterable;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import org.bcdtech.skript.CheeseSkript;
 import org.bstats.bukkit.Metrics;
 import org.bukkit.*;
 import org.bukkit.command.CommandSender;
@@ -572,7 +573,9 @@ public final class Skript extends JavaPlugin implements Listener {
 			setEnabled(false);
 			return;
 		}
-
+		// CheeseSkript start: Enable fork
+		CheeseSkript.getOrCreate();
+		// CheeseSkript end: Disable fork
 		// todo: remove completely 2.11 or 2.12
 		CompletableFuture<Boolean> aliases = Aliases.loadAsync();
 

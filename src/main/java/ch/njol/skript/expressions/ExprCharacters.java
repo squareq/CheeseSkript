@@ -63,9 +63,9 @@ public class ExprCharacters extends SimpleExpression<String> {
 	@Nullable
 	protected String[] get(Event event) {
 		String start = this.start.getSingle(event);
-		String end = (Objects.isNull(this.end)) ? this.start.getSingle(event) : this.end.getSingle(event); //BCD - Support both patterns.
+		String end = (Objects.isNull(this.end)) ? this.start.getSingle(event) : this.end.getSingle(event); //CheeseSkript - Support both patterns.
 		char startChar = start.charAt(0);
-		char endChar = (Objects.isNull(this.end)) ? start.charAt(start.length() - 1) : end.charAt(0); //BCD - Support both patterns.
+		char endChar = (Objects.isNull(this.end)) ? start.charAt(start.length() - 1) : end.charAt(0); //CheeseSkript - Support both patterns.
 
 		boolean reversed = startChar > endChar;
 		char delta = reversed ? (char) -1 : (char) 1;
@@ -85,7 +85,7 @@ public class ExprCharacters extends SimpleExpression<String> {
 				ArrayUtils.reverse(chars);
 			return chars;
 			//END
-		//BCD - Pattern 1
+		//CheeseSkript - Pattern 1
 		} else {
 			chars = new String[]{String.valueOf(this.start.getSingle(event).toCharArray())}; //Get the passed string from the expression.
 			for(String c : chars){
