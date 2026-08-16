@@ -137,7 +137,7 @@ public final class CheeseSkript implements Skript {
 
 	@Override
 	public SkriptAddon registerAddon(Class<?> source, String name) {
-		if(!source().isInstance(CheeseSkript.class)){
+		if(source.isInstance(CheeseSkript.class)){
 			throw new UnsupportedOperationException(addonRegistrationError);
 		}
 		return new CheeseSkriptAddonImpl(CheeseSkript, source, name, null);
