@@ -7,7 +7,6 @@ import ch.njol.skript.util.Getter;
 import ch.njol.util.Kleenean;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.MultimapBuilder;
-import kotlin.reflect.KProperty;
 import org.bukkit.event.Event;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
