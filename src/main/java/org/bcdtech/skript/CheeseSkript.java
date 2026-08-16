@@ -2,9 +2,6 @@ package org.bcdtech.skript;
 
 import ch.njol.skript.lang.SyntaxElement;
 import com.google.common.collect.ImmutableSet;
-import org.bcdtech.skript.bukkit.BukkitModule;
-import org.bcdtech.skript.bukkit.classes.data.BukkitClasses;
-import org.bcdtech.skript.lang.Future.SkriptCompletableFuture;
 import org.bcdtech.skript.lang.UnmodifiableSkript;
 import org.jetbrains.annotations.Unmodifiable;
 import org.skriptlang.skript.Skript;
@@ -53,9 +50,7 @@ public final class CheeseSkript implements Skript {
 	private void onEnable() {
 		if (!isEnabled()){
 			Enabled = true;
-			//Load modules
-			new BukkitClasses();
-			loadModules(new BukkitModule());
+			//ToDo: BUkkit Moduules
 			//End
 		} else {
 			throw new IllegalStateException("CheeseSkript is already enabled");
