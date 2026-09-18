@@ -318,6 +318,12 @@ public class SkriptConfig {
 			.optional(true)
 			.setter(t -> Function.executeWithNulls = t);
 
+	/**
+	 * CheeseSkript - We don't need the bossbar element's conflicting with ones from SkBee.
+	 */
+	public final static Option<Boolean> disableBossBarElements = new Option<>("disable bossbar elements", false)
+		.optional(true);
+
 	public final static Option<Boolean> disableHookVault = new Option<>("disable hooks.vault", false)
 		.optional(true)
 		.setter(value -> {
